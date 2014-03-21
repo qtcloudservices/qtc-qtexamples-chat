@@ -25,6 +25,7 @@ public slots:
     void messageSent();
 
     void connectionClosed();
+    void deleteReply(QNetworkReply *reply);
 
 private:
     Ui::MainWindow *ui;
@@ -32,6 +33,7 @@ private:
     QWebSocket *m_websocket;
     QUrl m_baseUrl;
     QString m_basePath;
+    QNetworkRequest m_requestTemplate;
 };
 
 #endif // MAINWINDOW_H

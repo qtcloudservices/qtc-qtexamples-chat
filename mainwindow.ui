@@ -32,6 +32,21 @@
         <property name="currentText">
          <string>guest</string>
         </property>
+        <item>
+         <property name="text">
+          <string>guest</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>qt-user</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>anonymous</string>
+         </property>
+        </item>
        </widget>
       </item>
       <item>

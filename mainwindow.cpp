@@ -8,6 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // Get the websocket id from qtcloudservices.com
     QString QTC_WEBSOCKET_ID = QStringLiteral(Copy_your_QTC_WEBSOCKET_ID_here);
 
     m_baseUrl = QUrl("https://staging-mws-eu-1.qtc.io");
@@ -16,15 +17,19 @@ MainWindow::MainWindow(QWidget *parent) :
     QUrl getSocketUrl = m_baseUrl;
     getSocketUrl.setPath(m_basePath + "/websocket_uri");
 
-    QNetworkRequest request;
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader("Accept", "application/json");
+    connect(m_qnam, &QNetworkAccessManager::finished, this, &MainWindow::deleteReply);
+
+    m_requestTemplate.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    m_requestTemplate.setRawHeader("Accept", "application/json");
+
+    QNetworkRequest request(m_requestTemplate);
     request.setUrl(getSocketUrl);
 
     QNetworkReply *reply = m_qnam->get(request);
     connect(reply, &QNetworkReply::finished, this, &MainWindow::socketFound);
 
     ui->lineEdit->setEnabled(false);
+    ui->sendButton->setEnabled(false);
 }
 
 MainWindow::~MainWindow()
@@ -38,7 +43,7 @@ void MainWindow::socketFound()
     QByteArray data = reply->readAll();
 
     if (reply->error()) {
-        ui->plainTextEdit->setPlainText(QString("Error: %1 - %2").arg(QString::number(reply->error()), reply->errorString()));
+        ui->plainTextEdit->setPlainText(QString("Error: %1 - %2: %3").arg(QString::number(reply->error()), reply->errorString(), data));
         return;
     }
 
@@ -51,7 +56,6 @@ void MainWindow::socketFound()
 
     QUrl url = dataObject["uri"].toString();
     m_websocket->open(url);
-    reply->deleteLater();
 }
 
 void MainWindow::websocketConnected()
@@ -62,6 +66,7 @@ void MainWindow::websocketConnected()
     connect(m_websocket, &QWebSocket::textMessageReceived, this, &MainWindow::messageReceived);
 
     ui->lineEdit->setEnabled(true);
+    ui->sendButton->setEnabled(true);
 }
 
 void MainWindow::connectionClosed()
@@ -69,6 +74,11 @@ void MainWindow::connectionClosed()
     ui->plainTextEdit->appendPlainText("Connection closed.");
     ui->lineEdit->setEnabled(false);
     ui->sendButton->setEnabled(false);
+}
+
+void MainWindow::deleteReply(QNetworkReply *reply)
+{
+    reply->deleteLater();
 }
 
 void MainWindow::sendMessage()
@@ -82,9 +92,7 @@ void MainWindow::sendMessage()
     QUrl sendMessageUrl = m_baseUrl;
     sendMessageUrl.setPath(m_basePath + "/messages");
 
-    QNetworkRequest request;
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader("Accept", "application/json");
+    QNetworkRequest request(m_requestTemplate);
     request.setUrl(sendMessageUrl);
 
     QJsonObject receiversObject;
@@ -106,8 +114,7 @@ void MainWindow::messageSent()
 {
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
     if (reply->error())
-        ui->plainTextEdit->appendPlainText(QString("Error sending message: %1 - %2").arg(QString::number(reply->error()), reply->errorString()));
-    reply->deleteLater();
+        ui->plainTextEdit->appendPlainText(QString("Error sending message: %1 - %2, %3").arg(QString::number(reply->error()), reply->errorString(), QString::fromUtf8(reply->readAll())));
 }
 
 void MainWindow::messageReceived(const QString &message)
