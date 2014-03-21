@@ -22,6 +22,7 @@ public slots:
     void messageReceived(const QString &message);
     void socketFound();
     void websocketConnected();
+    void messageSent();
 
     void connectionClosed();
 
@@ -29,6 +30,8 @@ private:
     Ui::MainWindow *ui;
     QNetworkAccessManager *m_qnam;
     QWebSocket *m_websocket;
+    QUrl m_baseUrl;
+    QString m_basePath;
 };
 
 #endif // MAINWINDOW_H

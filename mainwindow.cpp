@@ -8,16 +8,20 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    QUrl url = QUrl("https://staging-mws-api-eu-1.qtc.io");
-    url.setPath("/v1/channels/5301ec989a357417b9000028/subscribe");
+    QString QTC_WEBSOCKET_ID = QStringLiteral(Copy_your_QTC_WEBSOCKET_ID_here);
+
+    m_baseUrl = QUrl("https://staging-mws-eu-1.qtc.io");
+    m_basePath = ("/v1/instances/" + QTC_WEBSOCKET_ID);
+
+    QUrl getSocketUrl = m_baseUrl;
+    getSocketUrl.setPath(m_basePath + "/websocket_uri");
 
     QNetworkRequest request;
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Accept", "application/json");
-    request.setRawHeader("QtC-Websocket-Id", "5301ec979a357417b9000025");
-    request.setUrl(url);
+    request.setUrl(getSocketUrl);
 
-    QNetworkReply *reply = m_qnam->post(request, (QIODevice*)0);
+    QNetworkReply *reply = m_qnam->get(request);
     connect(reply, &QNetworkReply::finished, this, &MainWindow::socketFound);
 
     ui->lineEdit->setEnabled(false);
@@ -32,6 +36,12 @@ void MainWindow::socketFound()
 {
     QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
     QByteArray data = reply->readAll();
+
+    if (reply->error()) {
+        ui->plainTextEdit->setPlainText(QString("Error: %1 - %2").arg(QString::number(reply->error()), reply->errorString()));
+        return;
+    }
+
     QJsonObject dataObject = QJsonDocument::fromJson(data).object();
 
     m_websocket = new QWebSocket;
@@ -39,8 +49,7 @@ void MainWindow::socketFound()
     connect(m_websocket, &QWebSocket::connected, this, &MainWindow::websocketConnected);
     connect(m_websocket, &QWebSocket::disconnected, this, &MainWindow::connectionClosed);
 
-    QUrl url = dataObject["expiringUrl"].toString();
-    qDebug() << url;
+    QUrl url = dataObject["uri"].toString();
     m_websocket->open(url);
     reply->deleteLater();
 }
@@ -57,7 +66,7 @@ void MainWindow::websocketConnected()
 
 void MainWindow::connectionClosed()
 {
-    qDebug() << "Connection closed";
+    ui->plainTextEdit->appendPlainText("Connection closed.");
     ui->lineEdit->setEnabled(false);
     ui->sendButton->setEnabled(false);
 }
@@ -70,13 +79,39 @@ void MainWindow::sendMessage()
     ui->lineEdit->clear();
     text.prepend(ui->comboBox->currentText() + QStringLiteral(": "));
 
-    m_websocket->sendTextMessage(text);
-    ui->plainTextEdit->appendPlainText(text);
+    QUrl sendMessageUrl = m_baseUrl;
+    sendMessageUrl.setPath(m_basePath + "/messages");
+
+    QNetworkRequest request;
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader("Accept", "application/json");
+    request.setUrl(sendMessageUrl);
+
+    QJsonObject receiversObject;
+    QJsonArray everyone;
+    everyone.append("*");
+    receiversObject["sockets"] = everyone;
+    receiversObject["tags"] = QJsonArray();
+
+    QJsonObject dataObject;
+    dataObject["data"] = text;
+    dataObject["receivers"] = receiversObject;
+    QJsonDocument doc(dataObject);
+    QNetworkReply *reply = m_qnam->post(request, doc.toJson());
+
+    connect(reply, &QNetworkReply::finished, this, &MainWindow::messageSent);
+}
+
+void MainWindow::messageSent()
+{
+    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+    if (reply->error())
+        ui->plainTextEdit->appendPlainText(QString("Error sending message: %1 - %2").arg(QString::number(reply->error()), reply->errorString()));
+    reply->deleteLater();
 }
 
 void MainWindow::messageReceived(const QString &message)
 {
-    qDebug() << "message received:" << message;
     ui->plainTextEdit->appendPlainText(message);
 }
 
