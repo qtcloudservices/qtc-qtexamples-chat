@@ -8,11 +8,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // Get the websocket id from qtcloudservices.com
-    QString QTC_WEBSOCKET_ID = QStringLiteral(Copy_your_QTC_WEBSOCKET_ID_here);
+    // Get the gateway id from console.qtcloudservices.com
+    QString MWS_GATEWAY_ID = QStringLiteral("YOUR_MWS_GATEWAY_ID_HERE");
 
-    m_baseUrl = QUrl("https://staging-mws-eu-1.qtc.io");
-    m_basePath = ("/v1/instances/" + QTC_WEBSOCKET_ID);
+    m_baseUrl = QUrl("YOUR_MWS_INSTANCE_ADDRESS_HERE");
+    m_basePath = ("/v1/gateways/" + MWS_GATEWAY_ID);
 
     QUrl getSocketUrl = m_baseUrl;
     getSocketUrl.setPath(m_basePath + "/websocket_uri");
