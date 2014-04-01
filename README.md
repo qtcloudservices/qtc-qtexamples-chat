@@ -10,3 +10,18 @@ This example requires the Qt WebSockets module which is part of Qt 5.3. It can b
 When building the example you need to have a Managed WebSocket instance running and copy the MWS_GATEWAY_ID and MWS_INSTANCE_ADDRESS into mainwindow.cpp.
 
 For detailed instructions follow the [getting started](https://developer.qtc.io/mws/getting-started) instructions.
+
+
+----------------------------
+The example does not compile
+----------------------------
+
+Make sure that you have the qtwebsockets module.
+
+If you get errors like this:
+
+```
+error: 'YOUR_MWS_GATEWAY_ID_HERE' was not declared in this scope
+error: 'YOUR_MWS_INSTANCE_ADDRESS_HERE' was not declared in this scope
+```
+then you forgot to copy your data from your [Qt Cloud Services Account](https://console.qtcloudservices.com) into `mainwindow.cpp`.
