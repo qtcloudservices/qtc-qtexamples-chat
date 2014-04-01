@@ -14,7 +14,7 @@ For detailed instructions follow the [getting started](https://developer.qtc.io/
 
 
 ----------------------------
-The example does not compile
+What to do if the example does not compile:
 ----------------------------
 
 Make sure that you have the qtwebsockets module.
