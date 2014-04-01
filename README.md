@@ -37,3 +37,14 @@ Error: 204 - Host requires authentication: {"error":{"reason":"AccessDenied","me
 ```
 That means you did not disable the access control for this simple example.
 In the management console choose your websocket instance and set the **Access Control Management** to **None**.
+
+***
+
+For example with Ubuntu you might come across following error message during build:
+```
+/usr/bin/ld: cannot find -lGL
+```
+In this case you are missing OpenGL related packages which can be installed with following command:
+```
+ sudo apt-get install libgl1-mesa-dev
+```
