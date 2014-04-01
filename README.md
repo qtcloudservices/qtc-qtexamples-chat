@@ -4,6 +4,7 @@ Qt Cloud Services WebSockets Chat Example
 > Note: this example is currently experimental and requires advanced knowledge of Qt!
 
 This is a small chat application using the managed WebSockets provided by Qt Cloud Services.
+You can launch this example multiple times and on different computers and will instantly have a chat room where everyone that is connected can write messages.
 
 This example requires the Qt WebSockets module which is part of Qt 5.3. It can be run with Qt 5.3.0-beta1 and onwards.
 
