@@ -6,28 +6,31 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow),
     m_qnam(new QNetworkAccessManager(this))
 {
-    ui->setupUi(this);
+    // In order to connect to the WebSocket instance the address and id are required.
+    // The gateway id and instance address are available from your account
+    // at https://console.qtcloudservices.com
+    QString MWS_GATEWAY_ID = QStringLiteral(YOUR_MWS_GATEWAY_ID_HERE);
+    QString MWS_INSTANCE_ADDRESS = QStringLiteral(YOUR_MWS_INSTANCE_ADDRESS_HERE);
 
-    // Get the gateway id from console.qtcloudservices.com
-    QString MWS_GATEWAY_ID = QStringLiteral("YOUR_MWS_GATEWAY_ID_HERE");
-
-    m_baseUrl = QUrl("YOUR_MWS_INSTANCE_ADDRESS_HERE");
+    m_baseUrl = QUrl(MWS_INSTANCE_ADDRESS);
     m_basePath = ("/v1/gateways/" + MWS_GATEWAY_ID);
 
-    QUrl getSocketUrl = m_baseUrl;
-    getSocketUrl.setPath(m_basePath + "/websocket_uri");
-
     connect(m_qnam, &QNetworkAccessManager::finished, this, &MainWindow::deleteReply);
-
+    // Set up all communication with the server to use JSON
     m_requestTemplate.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     m_requestTemplate.setRawHeader("Accept", "application/json");
 
+    // First a REST call is needed to get the final websocket URI
+    QUrl getSocketUrl = m_baseUrl;
+    getSocketUrl.setPath(m_basePath + "/websocket_uri");
     QNetworkRequest request(m_requestTemplate);
     request.setUrl(getSocketUrl);
 
     QNetworkReply *reply = m_qnam->get(request);
     connect(reply, &QNetworkReply::finished, this, &MainWindow::socketFound);
 
+    // Set up the UI
+    ui->setupUi(this);
     ui->lineEdit->setEnabled(false);
     ui->sendButton->setEnabled(false);
 }
@@ -39,6 +42,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::socketFound()
 {
+    // We have a response from the server, hopefully containing the URI of the websocket instance
     QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
     QByteArray data = reply->readAll();
 
@@ -49,11 +53,13 @@ void MainWindow::socketFound()
 
     QJsonObject dataObject = QJsonDocument::fromJson(data).object();
 
+    // Create a websocket
     m_websocket = new QWebSocket;
     m_websocket->setParent(this);
     connect(m_websocket, &QWebSocket::connected, this, &MainWindow::websocketConnected);
     connect(m_websocket, &QWebSocket::disconnected, this, &MainWindow::connectionClosed);
 
+    // And open it with the URI
     QUrl url = dataObject["uri"].toString();
     m_websocket->open(url);
 }
@@ -78,11 +84,17 @@ void MainWindow::connectionClosed()
 
 void MainWindow::deleteReply(QNetworkReply *reply)
 {
+    // Do not leak network replies
     reply->deleteLater();
 }
 
 void MainWindow::sendMessage()
 {
+    // Currently the way to broadcast messages with Qt Cloud Service's
+    // WebSockets is to make a rest call.
+    // With the sockets and tags parameters in JSON it's possible to specify the
+    // recipient, but for this example we send our messages to all users.
+
     QString text = ui->lineEdit->text();
     if (text.isEmpty())
         return;
